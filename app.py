@@ -1,5 +1,10 @@
 import streamlit as st
 import os
+from datetime import datetime
+
+import gspread
+from google.oauth2.service_account import Credentials
+
 from processor_pipeline import process_image
 
 # ------------------------------------------------------------
@@ -8,37 +13,70 @@ from processor_pipeline import process_image
 st.set_page_config(page_title="SnapMind", layout="centered")
 
 # ------------------------------------------------------------
-# BASIC ACCESS CONTROL (TEMP SECURITY)
+# GOOGLE SHEETS CONNECTION
 # ------------------------------------------------------------
-PASSWORD = "snapmind123"
 
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
 
-if not st.session_state.authenticated:
-    pwd = st.text_input("Enter access password", type="password")
+def connect_sheet():
 
-    if pwd == PASSWORD:
-        st.session_state.authenticated = True
-        st.rerun()
-    else:
-        st.stop()
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
+
+    client = gspread.authorize(creds)
+
+    sheet = client.open("SnapMind Users").sheet1
+
+    return sheet
+
 
 # ------------------------------------------------------------
-# SESSION STATE (PREVENT STACKING)
+# SESSION STATE
 # ------------------------------------------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
 
 # ------------------------------------------------------------
-# UI
+# LOGIN FORM (FIXED VERSION)
+# ------------------------------------------------------------
+if not st.session_state.logged_in:
+
+    st.title("🔐 SnapMind Login")
+
+    with st.form("login_form"):
+
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+
+            if email and password:
+                save_user(email)
+                st.session_state.logged_in = True
+                st.success("Welcome!")
+                st.rerun()
+            else:
+                st.error("Please enter email and password")
+
+    st.stop()
+
+# ------------------------------------------------------------
+# MAIN APP
 # ------------------------------------------------------------
 st.title("📸 SnapMind")
 st.write("Turn screenshots into usable knowledge")
 
-# ------------------------------------------------------------
-# FILE UPLOAD
-# ------------------------------------------------------------
 uploaded_file = st.file_uploader(
     "Upload Screenshot",
     type=["png", "jpg", "jpeg"]
@@ -48,9 +86,8 @@ MAX_SIZE_MB = 5
 
 if uploaded_file:
 
-    # FILE SIZE LIMIT
     if uploaded_file.size > MAX_SIZE_MB * 1024 * 1024:
-        st.error("File too large. Max 5MB allowed.")
+        st.error("File too large (max 5MB)")
         st.stop()
 
     os.makedirs("uploads", exist_ok=True)
@@ -66,18 +103,15 @@ if uploaded_file:
 
     if result:
         st.session_state.last_result = result
-        st.success("Text extracted successfully")
-
+        st.success("Text extracted")
     else:
         st.session_state.last_result = None
-        st.warning("⚠️ No readable text found in this image")
+        st.warning("No readable text found")
 
 # ------------------------------------------------------------
 # DISPLAY RESULT
 # ------------------------------------------------------------
 if st.session_state.last_result:
-
-    st.subheader("🧠 Extracted Text")
 
     edited_text = st.text_area(
         "Edit before saving",
@@ -85,12 +119,10 @@ if st.session_state.last_result:
         height=200
     )
 
-    # DOWNLOAD BUTTON
     st.download_button(
-        label="💾 Download Note",
-        data=edited_text,
-        file_name="snapmind_note.txt",
-        mime="text/plain"
+        "💾 Download Note",
+        edited_text,
+        "snapmind_note.txt"
     )
 
 # ------------------------------------------------------------

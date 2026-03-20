@@ -1,27 +1,21 @@
 # SnapMind
 
-SnapMind is a mobile-friendly app that converts screenshots into usable text-based knowledge.
+![SnapMind Screenshot](screenshot.png)
+
+SnapMind is a mobile-first app that converts screenshots into usable knowledge.
+
+SnapMind is a mobile-first app that converts screenshots into usable knowledge.
 
 ## Features
 
 - Upload screenshots
-- Extract text using OCR
-- Clean and structure notes
-- Save and view notes
+- Extract text (OCR)
+- Clean text
+- Edit before saving
+- Download notes
+- Clear interface
 
-## Run Locally
+## Run locally
 
-```bash
-pip install -r requirements.txt
+pip install -r requirements.txt  
 streamlit run app.py
-
----
-
-# 🚫 8. `.gitignore`
-
-```text
-venv/
-__pycache__/
-*.pyc
-uploads/
-notes/
