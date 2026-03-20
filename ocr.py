@@ -1,19 +1,20 @@
 import easyocr
 
 # ------------------------------------------------------------
-# INITIALIZE OCR READER (once)
-# ------------------------------------------------------------
-reader = easyocr.Reader(['en'])
-
-# ------------------------------------------------------------
-# EXTRACT TEXT
+# SAFE OCR (LAZY LOAD)
 # ------------------------------------------------------------
 
 
 def extract_text(image_path):
 
     try:
+        # Load reader only when needed (prevents startup crash)
+        reader = easyocr.Reader(['en'], gpu=False)
+
         results = reader.readtext(image_path)
+
+        if not results:
+            return ""
 
         text = " ".join([res[1] for res in results])
 

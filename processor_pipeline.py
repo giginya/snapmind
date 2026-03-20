@@ -7,7 +7,7 @@ def process_image(image_path):
 
     raw_text = extract_text(image_path)
 
-    # ✅ FIX: handle empty OCR safely
+    # SAFETY CHECK
     if not raw_text or len(raw_text.strip()) < 5:
         return None
 
