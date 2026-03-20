@@ -1,6 +1,5 @@
 # ------------------------------------------------------------
-# PURPOSE:
-# Clean OCR output
+# CLEAN OCR TEXT
 # ------------------------------------------------------------
 
 def clean_text(text):
@@ -12,7 +11,6 @@ def clean_text(text):
     for line in lines:
         line = line.strip()
 
-        # Remove empty/noise lines
         if len(line) > 2:
             cleaned.append(line)
 
