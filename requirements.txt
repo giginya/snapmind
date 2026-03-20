@@ -3,3 +3,4 @@ easyocr
 pillow
 numpy
 opencv-python-headless
+google-auth

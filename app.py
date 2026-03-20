@@ -36,6 +36,14 @@ def connect_sheet():
     return sheet
 
 
+def save_user(email):
+    try:
+        sheet = connect_sheet()
+        sheet.append_row([email, str(datetime.now())])
+    except Exception as e:
+        print("Sheet error:", e)
+
+
 # ------------------------------------------------------------
 # SESSION STATE
 # ------------------------------------------------------------
