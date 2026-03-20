@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import tempfile
 from datetime import datetime
 
 from processor_pipeline import process_image
@@ -10,7 +11,7 @@ from processor_pipeline import process_image
 st.set_page_config(page_title="SnapMind", layout="centered")
 
 # ------------------------------------------------------------
-# GOOGLE SHEETS CONNECTION (SAFE + CLEAN)
+# GOOGLE SHEETS CONNECTION (SAFE)
 # ------------------------------------------------------------
 
 
@@ -29,19 +30,15 @@ def connect_sheet():
         "https://www.googleapis.com/auth/drive"
     ]
 
-    try:
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=scope
-        )
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
 
-        client = gspread.authorize(creds)
-        sheet = client.open("SnapMind Users").sheet1
+    client = gspread.authorize(creds)
+    sheet = client.open("SnapMind Users").sheet1
 
-        return sheet
-
-    except Exception as e:
-        raise Exception(f"Google Sheets connection failed: {e}")
+    return sheet
 
 
 def save_user(email):
@@ -63,7 +60,7 @@ if "last_result" not in st.session_state:
     st.session_state.last_result = None
 
 # ------------------------------------------------------------
-# LOGIN FORM (MAIN SCREEN)
+# LOGIN FORM
 # ------------------------------------------------------------
 if not st.session_state.logged_in:
 
@@ -105,23 +102,30 @@ if uploaded_file:
         st.error("File too large (max 5MB)")
         st.stop()
 
-    os.makedirs("uploads", exist_ok=True)
-    file_path = os.path.join("uploads", uploaded_file.name)
-
-    try:
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-    except Exception as e:
-        st.error(f"File save error: {e}")
-        st.stop()
-
     st.info("Processing image...")
 
+    temp_path = None
+
     try:
-        result = process_image(file_path)
+        # ✅ INDUSTRY STANDARD TEMP FILE
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+            tmp_file.write(uploaded_file.getbuffer())
+            temp_path = tmp_file.name
+
+        # ✅ PROCESS IMAGE
+        result = process_image(temp_path)
+
     except Exception as e:
         st.error(f"Processing error: {e}")
         result = None
+
+    finally:
+        # ✅ CLEANUP TEMP FILE
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass
 
     if result:
         st.session_state.last_result = result
