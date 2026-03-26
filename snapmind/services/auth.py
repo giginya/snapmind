@@ -1,53 +1,170 @@
 import random
 import datetime
+import hashlib
+import smtplib
+from email.mime.text import MIMEText
+
+import streamlit as st
 
 from snapmind.utils.validators import is_valid_email, is_valid_otp
+from snapmind.storage.cloud import sheets
 
 
-# simple in-memory user store (upgrade later)
-USERS = {}
+# 🔷 CONFIG
+OTP_EXPIRY_MINUTES = 5
+OTP_RESEND_COOLDOWN_SECONDS = 60
 
+
+# 🔷 UTILITIES
 
 def generate_otp(length: int = 6) -> str:
-    return "".join([str(random.randint(0, 9)) for _ in range(length)])
+    return "".join(str(random.randint(0, 9)) for _ in range(length))
 
 
-def is_otp_expired(expiry: str) -> bool:
-    return datetime.datetime.utcnow() > datetime.datetime.fromisoformat(expiry)
+def hash_otp(otp: str) -> str:
+    return hashlib.sha256(otp.encode()).hexdigest()
 
 
-def register_user(email: str):
+def now_utc():
+    return datetime.datetime.utcnow()
+
+
+# 🔷 EMAIL
+
+def send_otp_email(email: str, otp: str) -> bool:
+    try:
+        sender = st.secrets["EMAIL_SENDER"]
+        password = st.secrets["EMAIL_PASSWORD"]
+
+        msg = MIMEText(f"""
+Your SnapMind verification code is:
+
+{otp}
+
+Expires in {OTP_EXPIRY_MINUTES} minutes.
+""")
+
+        msg["Subject"] = "SnapMind OTP"
+        msg["From"] = sender
+        msg["To"] = email
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender, password)
+            server.sendmail(sender, email, msg.as_string())
+
+        return True
+
+    except Exception as e:
+        print("EMAIL ERROR:", e)
+        return False
+
+
+# 🔷 SHEETS HELPERS
+
+def get_all_records():
+    sheet = sheets.connect_sheet()
+    return sheet, sheet.get_all_records()
+
+
+def get_user_record(email: str):
+    _, records = get_all_records()
+
+    for r in records:
+        if str(r["email"]) == email:
+            return r
+
+    return None
+
+
+def upsert_user(email: str, otp_hash: str, expiry: str):
+    sheet, records = get_all_records()
+
+    for i, r in enumerate(records):
+        if str(r["email"]) == email:
+            row_index = i + 2
+
+            sheet.update(
+                range_name=f"C{row_index}:E{row_index}",
+                values=[[otp_hash, expiry, "false"]]
+            )
+            return
+
+    sheet.append_row([
+        email,
+        now_utc().isoformat(),
+        otp_hash,
+        expiry,
+        "false"
+    ])
+
+
+def mark_verified(email: str):
+    sheet, records = get_all_records()
+
+    for i, r in enumerate(records):
+        if str(r["email"]) == email:
+            row_index = i + 2
+
+            sheet.update(
+                range_name=f"E{row_index}",
+                values=[["true"]]
+            )
+            return
+
+
+# 🔷 REGISTER
+
+def register_user(email: str) -> bool:
+
     if not is_valid_email(email):
         return False
 
+    record = get_user_record(email)
+
+    # 🔴 RATE LIMIT
+    if record:
+        last_time = datetime.datetime.fromisoformat(
+            str(record["created_at"])
+        )
+
+        if (now_utc() - last_time).seconds < OTP_RESEND_COOLDOWN_SECONDS:
+            return False
+
     otp = generate_otp()
-    expiry = str(datetime.datetime.utcnow() + datetime.timedelta(minutes=5))
+    otp_hash = hash_otp(otp)
 
-    USERS[email] = {
-        "otp": otp,
-        "expiry": expiry,
-        "verified": False
-    }
+    expiry = (now_utc() + datetime.timedelta(
+        minutes=OTP_EXPIRY_MINUTES
+    )).isoformat()
 
-    print(f"[DEBUG OTP] {email}: {otp}")  # replace with email sender later
+    upsert_user(email, otp_hash, expiry)
 
-    return True
+    return send_otp_email(email, otp)
 
+
+# 🔷 VERIFY
 
 def verify_otp(email: str, otp: str) -> bool:
-    if email not in USERS:
-        return False
 
     if not is_valid_otp(otp):
         return False
 
-    user = USERS[email]
+    record = get_user_record(email)
 
-    if is_otp_expired(user["expiry"]):
+    if not record:
         return False
 
-    if user["otp"] != otp:
+    expiry = datetime.datetime.fromisoformat(
+        str(record["expiry"])
+    )
+
+    if now_utc() > expiry:
         return False
 
-    user["verified"] = True
+    otp_hash = hash_otp(otp)
+
+    if otp_hash != str(record["otp_hash"]):
+        return False
+
+    mark_verified(email)
     return True
