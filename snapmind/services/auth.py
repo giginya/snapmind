@@ -4,6 +4,7 @@ import hashlib
 import smtplib
 from email.mime.text import MIMEText
 
+from altair import value
 import streamlit as st
 
 from snapmind.utils.validators import is_valid_email, is_valid_otp
@@ -122,24 +123,61 @@ def register_user(email: str) -> bool:
     record = get_user_record(email)
 
     # 🔴 RATE LIMIT
-    if record:
-        last_time = datetime.datetime.fromisoformat(
-            str(record["created_at"])
-        )
 
-        if (now_utc() - last_time).seconds < OTP_RESEND_COOLDOWN_SECONDS:
+    def parse_datetime_safe(value):
+        """
+        Safely parse datetime from Google Sheets.
+        Handles string, float, empty, and invalid values.
+        """
+
+        import datetime
+
+        # Case 1: Already valid ISO string
+        try:
+            return datetime.datetime.fromisoformat(str(value))
+        except Exception:
+            pass
+
+        # Case 2: Excel / Sheets numeric timestamp
+        try:
+            # Excel epoch starts 1899-12-30
+            excel_epoch = datetime.datetime(1899, 12, 30)
+            return excel_epoch + datetime.timedelta(days=float(value))
+        except Exception:
+            pass
+
+        # Case 3: fallback (treat as old → allow resend)
+        return datetime.datetime.utcnow() - datetime.timedelta(hours=1)
+
+    # 🔷 RATE LIMIT CHECK (SAFE VERSION)
+
+    if record:
+        last_time = parse_datetime_safe(record.get("created_at"))
+
+        time_diff = (now_utc() - last_time).total_seconds()
+
+        # 🔍 Debug visibility (VERY IMPORTANT)
+        print("RATE CHECK:")
+        print("last_time:", last_time)
+        print("now:", now_utc())
+        print("diff (seconds):", time_diff)
+
+        if time_diff < OTP_RESEND_COOLDOWN_SECONDS:
+            print("⛔ RATE LIMITED")
             return False
 
-    otp = generate_otp()
-    otp_hash = hash_otp(otp)
+        otp = generate_otp()
+        otp_hash = hash_otp(otp)
 
-    expiry = (now_utc() + datetime.timedelta(
-        minutes=OTP_EXPIRY_MINUTES
-    )).isoformat()
+        expiry = (now_utc() + datetime.timedelta(
+            minutes=OTP_EXPIRY_MINUTES
+        )).isoformat()
 
-    upsert_user(email, otp_hash, expiry)
+        upsert_user(email, otp_hash, expiry)
 
-    return send_otp_email(email, otp)
+        return send_otp_email(email, otp)
+
+    return False
 
 
 # 🔷 VERIFY
