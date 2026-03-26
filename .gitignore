@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env
+
+# OS
+.DS_Store
+
+# Secrets (CRITICAL)
+snapmind/config/credentials.json
+
+# Streamlit secrets (local dev)
+.streamlit/secrets.toml
+
+# Local database
+snapmind/storage/local/db.json
+
+# Cloud queue
+snapmind/storage/cloud/queue.json
+
+# ML data (optional: keep if you want versioning)
+snapmind/ml/data/feedback.json
+
+# ML model artifacts
+snapmind/ml/model.pkl
+
+# Logs
+*.log
