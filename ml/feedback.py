@@ -3,7 +3,7 @@
 import json
 import os
 
-DATA_PATH = "snapmind/ml/data/feedback.json"
+DATA_PATH = "ml/data/feedback.json"
 
 
 def log_feedback(features, label):

@@ -1,4 +1,4 @@
-# snapmind/ml/training.py
+# ml/training.py
 
 import json
 import os
@@ -8,8 +8,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 import joblib
 
-MODEL_PATH = "snapmind/ml/model.pkl"
-DATA_PATH = "snapmind/ml/data/feedback.json"
+MODEL_PATH = "ml/model.pkl"
+DATA_PATH = "ml/data/feedback.json"
 
 
 def load_training_data():

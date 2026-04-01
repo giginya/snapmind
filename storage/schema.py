@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import List, Dict, Optional
 import uuid
 import datetime
 
@@ -30,11 +30,11 @@ class Note:
     type: str
     tags: List[str]
     image: Dict
-    metadata: ProcessingMetadata
+    metadata: Optional[ProcessingMetadata]
 
     @staticmethod
     def create():
-        now = str(datetime.datetime.utcnow())
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         return Note(
             id=str(uuid.uuid4()),

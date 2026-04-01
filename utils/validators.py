@@ -1,5 +1,5 @@
 import re
-from snapmind.storage.schema import Note
+from storage.schema import Note
 
 
 MAX_FILE_SIZE_MB = 5

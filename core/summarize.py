@@ -1,7 +1,7 @@
 # snapmind/core/summarize.py
 
 from datetime import datetime
-from snapmind.storage.schema import Note, ProcessingMetadata
+from storage.schema import Note, ProcessingMetadata
 
 
 def generate_title(text: str):

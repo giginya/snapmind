@@ -7,8 +7,8 @@ from email.mime.text import MIMEText
 from altair import value
 import streamlit as st
 
-from snapmind.utils.validators import is_valid_email, is_valid_otp
-from snapmind.storage.cloud import sheets
+from utils.validators import is_valid_email, is_valid_otp
+from storage.cloud import sheets
 
 
 # 🔷 CONFIG

@@ -4,11 +4,11 @@ import json
 import os
 import time
 
-from snapmind.storage.local.store import save_note
-from snapmind.storage.cloud.sheets import push_note_to_sheets
+from storage.local.store import save_note
+from storage.cloud.sheets import push_note_to_sheets
 
 
-QUEUE_PATH = "snapmind/storage/cloud/queue.json"
+QUEUE_PATH = "storage/cloud/queue.json"
 
 
 def _load_queue():
@@ -41,7 +41,7 @@ def _flush_queue():
 
     for item in queue:
         try:
-            push_note_to_sheets(item)
+            push_note_to_sheets(note=item, email=item.get("email"))
         except Exception:
             remaining.append(item)
 
@@ -54,7 +54,7 @@ def save_and_sync(note):
 
     # 2. attempt cloud sync
     try:
-        push_note_to_sheets(note)
+        push_note_to_sheets(note=note, email=note.get("email"))
     except Exception:
         _enqueue(note.__dict__)
 

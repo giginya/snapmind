@@ -1,9 +1,9 @@
-# snapmind/ml/model.py
+# ml/model.py
 
 import os
 import joblib
 
-MODEL_PATH = "snapmind/ml/model.pkl"
+MODEL_PATH = "ml/model.pkl"
 
 
 def load_model():

@@ -1,10 +1,14 @@
+from ml.feedback import log_feedback
+from services.analytics import track_event
+from services.auth import register_user, verify_otp
+from services.sync import save_and_sync
+from core.pipeline import run_pipeline
 import streamlit as st
+import sys
+import os
 
-from snapmind.core.pipeline import run_pipeline
-from snapmind.services.sync import save_and_sync
-from snapmind.services.auth import register_user, verify_otp
-from snapmind.services.analytics import track_event
-from snapmind.ml.feedback import log_feedback
+# 🔴 FORCE ROOT INTO PYTHON PATH
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 
 # 🔷 SESSION STATE INITIALIZATION

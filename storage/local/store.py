@@ -1,8 +1,8 @@
 import json
 import os
 
-from snapmind.storage.schema import Note, Block, ProcessingMetadata
-from snapmind.utils.validators import validate_note
+from storage.schema import Note, Block, ProcessingMetadata
+from utils.validators import validate_note
 
 
 DB_PATH = "storage/local/db.json"

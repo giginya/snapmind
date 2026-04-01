@@ -1,19 +1,19 @@
-import snapmind.utils.image
+import utils.image
 
-from snapmind.core.ocr import extract_text
-from snapmind.core.structure import structure_content, normalize_blocks
-from snapmind.core.summarize import (
+from core.ocr import extract_text
+from core.structure import structure_content, normalize_blocks
+from core.summarize import (
     summarize_content,
     build_processing_metadata,
     finalize_note,
 )
-from snapmind.core.confidence import compute_confidence
+from core.confidence import compute_confidence
 
-from snapmind.ml.features import extract_advanced_features
-from snapmind.ml.model import predict
-from snapmind.ml.router import route_pipeline
+from ml.features import extract_advanced_features
+from ml.model import predict
+from ml.router import route_pipeline
 
-from snapmind.storage.schema import Note, ProcessingMetadata
+from storage.schema import Note, ProcessingMetadata
 
 
 # 🔷 Specialized processors
@@ -59,13 +59,13 @@ def handle_pipeline_failure(error):
 
 def run_pipeline(file, user_mode=None):
     try:
-        snapmind.utils.image.validate_image_input(file)
+        utils.image.validate_image_input(file)
 
-        image = snapmind.utils.image.load_image(file)
-        image = snapmind.utils.image.preprocess_image(image)
+        image = utils.image.load_image(file)
+        image = utils.image.preprocess_image(image)
 
         raw_text, ocr_conf = extract_text(image, "ocr")
-        clean_text = snapmind.utils.image.clean_extracted_text(raw_text)
+        clean_text = utils.image.clean_extracted_text(raw_text)
 
         # 🔥 Feature extraction
         features = extract_advanced_features(image["file"], clean_text)

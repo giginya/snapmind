@@ -1,4 +1,4 @@
-from snapmind.storage.schema import Block
+from storage.schema import Block
 
 
 def structure_content(text: str):
